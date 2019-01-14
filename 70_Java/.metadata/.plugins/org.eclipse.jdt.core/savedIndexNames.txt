@@ -1,0 +1,7 @@
+INDEX VERSION 1.131+/home/denktmit/Dokumente/Git/Aktivenplaner/70_Java/.metadata/.plugins/org.eclipse.jdt.core
+3887887159.index
+3703194086.index
+2016071737.index
+49938899.index
+694830026.index
+974490767.index
