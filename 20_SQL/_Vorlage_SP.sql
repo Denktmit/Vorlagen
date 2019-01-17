@@ -36,12 +36,12 @@ CREATE PROCEDURE TestSP (                                       -- TODO
  )
 BEGIN
   initialPart:BEGIN
-    -- Declaration of local variables
-    DECLARE @szProcedureName  NVARCHAR(50)    DEFAULT N'TestSP';-- TODO
-    DECLARE @nErrorCall       INT             DEFAULT 0;
-    DECLARE @szErrorCall      NVARCHAR(1000)  DEFAULT '';
+    -- Declaration of local variables (only in procedure)
+    DECLARE szProcedureName  NVARCHAR(50)    DEFAULT N'TestSP'; -- TODO
+    DECLARE nErrorCall       INT             DEFAULT 0;
+    DECLARE szErrorCall      NVARCHAR(1000)  DEFAULT '';
 
-    -- Set default values
+    -- Set default values (stay alive after procedure)
     SET nInValue      = IFNULL(nInValue,      1);               -- TODO
     SET nOutValue     = IFNULL(nOutValue,     2);               -- TODO
     SET nInoutValue   = IFNULL(nInoutValue,   3);               -- TODO
@@ -59,7 +59,7 @@ BEGIN
     -- Debug_output_start
     IF nDebug <> 0 THEN
       INSERT INTO tblDebug (szComment) VALUE (N'---------------------------------------------------');
-      INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'Starting Procedure ', @szProcedureName, N':'));
+      INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'Starting Procedure ', szProcedureName, N':'));
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nUserId = ', nUserId));
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nInValue = ', nInValue));              -- TODO
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nOutValue = ', nOutValue));            -- TODO
@@ -84,7 +84,7 @@ BEGIN
         SET nError = 4;
 
 
----------------------------------------------------
+-- -------------------------------------------------
 --       VD:       V V V   Continue here V V V
 
 
@@ -99,12 +99,12 @@ BEGIN
 
 
     -- Start error check
-    IF ISNULL(@nErrorCall, -1) <> 0 THEN
-      IF @nErrorCall < 0 THEN
+    IF IFNULL(nErrorCall, -1) <> 0 THEN
+      IF nErrorCall < 0 THEN
         SET nError = nError-1;
       END IF;
-      IF @nErrorCall > 0 THEN
-        SET nError = nError+100:
+      IF nErrorCall > 0 THEN
+        SET nError = nError+100;
       END IF;
       LEAVE mainPart;
     END IF;
@@ -160,22 +160,32 @@ DELIMITER ;
 
 /* Test-Call
 use TestDB;
+set @nUserId = 492;
+
 set @nInValue = 2;
 set @nOutValue = 0;
 set @nInoutValue = 3;
-set @nUserId = 492;
-set @nDebug = 1;
+
+set @nNoResultset = 0;
+set @nError       = 0;
+set @szError      = N'';
+set @nDebug       = 1;
 CALL TestSP(
-    @nInValue
+    @nUserId
+  , @nInValue
   , @nOutValue
   , @nInoutValue
-  , @nUserId
+  , @nNoResultSet
+  , @nError
+  , @szError
   , @nDebug
   );
-select  @nInValue
+select  @nUserId
+      , @nInValue
       , @nOutValue
       , @nInoutValue
-      , @nUserId;
+      , @nError
+      , @szError;
 */
 
 
