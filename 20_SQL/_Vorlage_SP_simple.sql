@@ -5,22 +5,25 @@
 
 
 
-USE TestDB;                                                     
-DROP PROCEDURE IF EXISTS TestSP_simple;                         
+USE TestDB;
+DROP PROCEDURE IF EXISTS TestSP_simple;
 
 DELIMITER //
-CREATE PROCEDURE TestSP_simple (                                
-    INOUT nInt       INT
-  , INOUT szString   NVARCHAR(100)
-  , IN    nDebug     INT
+CREATE PROCEDURE TestSP_simple (
+    INOUT nInt          INT
+  , INOUT szString      NVARCHAR(100)
+  , IN    nDebug        INT
+  , IN    nNoResultSet  INT
+  , OUT   nError        INT
+  , OUT   szError       NVARCHAR(200)
  )
 BEGIN
     -- declaration of local variables
-    DECLARE szDeclaredString  NVARCHAR(50)    DEFAULT N'TestDeclare'; 
+    DECLARE szDeclaredString  NVARCHAR(50)    DEFAULT N'TestDeclare';
     DECLARE nDeclaredInt      INT             DEFAULT 5951561;
 
     -- Set default values
-    SET @nSetInt      = IFNULL(@nSetInt,      1);               
+    SET @nSetInt      = IFNULL(@nSetInt,      1);
     SET @szSetString  = IFNULL(@szSetString,       N'Test@@@@');
 
 
@@ -75,7 +78,7 @@ BEGIN
     select nDeclaredInt        =  2222;
     select szDeclaredString    =  N'2222';
     select @nSetInt            =  2222;
-    select @szSetString        =  N'2222'; 
+    select @szSetString        =  N'2222';
 
     -- Start Debug
     IF nDebug <> 0 THEN
@@ -87,6 +90,14 @@ BEGIN
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'     new @szSetString:  ', @szSetString));
     END IF;
     -- End Debug */
+
+    IF nNoResultSet = 0 THEN
+      SELECT * FROM tblTestOne WHERE nId <= 10;
+    END IF;
+
+    SET nError  = 0;
+    SET szError = N'No Error...';
+
 
   END mainPart;
   -- ----------------------------------
@@ -113,22 +124,30 @@ DELIMITER ;
 
 /* Test-Call
 use TestDB;
-set @nInt       = 492;
-set @szString   = N'Test-Call-String';
-set @nDebug     = 1;
+set @nInt         = 492;
+set @szString     = N'Test-Call-String';
+set @nDebug       = 1;
+set @nNoResultSet = 0;
+set @nError       = 0;
+set @szError      = N'';
 CALL TestSP_simple(
     @nInt
   , @szString
   , @nDebug
+  , @nNoResultSet
+  , @nError
+  , @szError
   );
 select  @nInt
-      , @szString;
-select nInt;            
-select szString;        
-select nDeclaredInt;    
+      , @szString
+      , @nError
+      , @szError;
+select nInt;
+select szString;
+select nDeclaredInt;
 select szDeclaredString;
-select @nSetInt;        
-select @szSetString;    
+select @nSetInt;
+select @szSetString;
 
 */
 
