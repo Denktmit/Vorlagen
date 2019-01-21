@@ -1,6 +1,6 @@
 /**********************************************************************
   Template for a Stored Procedure
-  Last change: 2019-01-21 17:13
+  Last change: 2019-01-21 17:13                                 -- TODO
 
   SP-Name : TestSP                                              -- TODO
   Purpose :                                                     -- TODO
@@ -227,7 +227,9 @@ BEGIN
   -- ----------------------------------
   endPart:BEGIN
     --  Start: Build resultset                                  -- TODO
-    select * FROM tblTestOne;
+    IF nNoResultset = 0 THEN
+      SELECT szOutValue as result;
+    END IF;
     --  -End-: Build resultset
     --  Start: Debug                                            -- TODO
     IF nDebug <> 0 THEN
