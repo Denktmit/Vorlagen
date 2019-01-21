@@ -1,5 +1,6 @@
 /**********************************************************************
   Template for a Stored Procedure
+  Last change: 2019-01-21 17:13
 
   SP-Name : TestSP                                              -- TODO
   Purpose :                                                     -- TODO
@@ -43,7 +44,11 @@ BEGIN
     --  Start: Declaration of local variables (only in procedure)   -- TODO
     DECLARE szProcedureName   NVARCHAR(50)    DEFAULT N'TestSP';-- TODO
     DECLARE nErrorCall        INT             DEFAULT 0;
+<<<<<<< HEAD
+    DECLARE szErrorCall       NVARCHAR(1000)  DEFAULT N'';
+=======
     DECLARE szErrorCall       NVARCHAR(1000)  DEFAULT '';
+>>>>>>> master
     DECLARE nRowCount         INT             DEFAULT 0;
     --  -End-: Declaration of local variables (only in procedure)
     --  Start: Setting of global variables (stay alive after procedure)   -- TODO
@@ -129,10 +134,10 @@ BEGIN
     --  Start: Error check
     IF IFNULL(nErrorCall, -1) <> 0 THEN
       IF nErrorCall < 0 THEN
-        SET nError = nError-1;
+        SET nError = nErrorCall-100;
       END IF;
       IF nErrorCall > 0 THEN
-        SET nError = nError+100;
+        SET nError = nErrorCall+100;
       END IF;
       LEAVE mainPart;
     END IF;
@@ -167,10 +172,17 @@ BEGIN
     --  Start: Error check
     IF IFNULL(nErrorCall, -1) <> 0 THEN
       IF nErrorCall < 0 THEN
+<<<<<<< HEAD
+        SET nError = nErrorCall-100;
+      END IF;
+      IF nErrorCall > 0 THEN
+        SET nError = nErrorCall+100;
+=======
         SET nError = nError-1;
       END IF;
       IF nErrorCall > 0 THEN
         SET nError = nError+100;
+>>>>>>> master
       END IF;
       LEAVE mainPart;
     END IF;
