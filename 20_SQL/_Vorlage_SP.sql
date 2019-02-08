@@ -1,26 +1,25 @@
 /**********************************************************************
-  Template for a Stored Procedure
-  Last change: 2019-01-21 17:13                                 -- TODO
-
-  SP-Name : TestSP                                              -- TODO
-  Purpose :                                                     -- TODO
-  Returns : -x  - Error at called procedure                     -- TODO
-            0   - Completed successfully
-            1   - Incorrect input
-            2   - Error at end of procedure
-            3   - (1062)  Found duplicate key
-            4   - (45000) User defined error
-            5   - (1106)  Unknown procedure
-            6   - (1122)  Unknown function
-  Hints   :                                                     -- TODO
-            - needs following DB-objects:
-              ->  spInsertHistorie()
-              ->  spRaise_Error()
-              ->  spGet_Last_Error()
-              ->  fnXY
-              ->  spXY()
-  History :                                                     -- TODO
-            - 2019.01.15, VD, Creation of the template
+* Template for a Stored Procedure
+* Last change: 2019-01-27 20:51                                 -- TODO
+*
+* SP-Name : TestSP                                              -- TODO
+* Purpose :                                                     -- TODO
+* Returns : -x  - Error at called procedure                     -- TODO
+*           0   - Completed successfully
+*           1   - Incorrect input
+*           2   - Error at end of procedure
+*           3   - (1062)  Found duplicate key
+*           4   - (45000) User defined error
+*           5   - (1106)  Unknown procedure
+*           6   - (1122)  Unknown function
+* Hints   :                                                     -- TODO
+*           - needs following DB-objects:
+*             ->  spInsertHistorie()
+*             ->  fnXY
+*             ->  spXY()
+* History :                                                     -- TODO
+*           - 2019.01.25, VD, spInsertHistorie added
+*           - 2019.01.15, VD, Creation of the template
 **********************************************************************/
 
 USE TestDB;                                                     -- TODO
@@ -34,22 +33,19 @@ CREATE PROCEDURE TestSP (                                       -- TODO
   , OUT   szOutValue    NVARCHAR(200)                           -- TODO
   , INOUT nInoutValue   INT                                     -- TODO
   --
-  , IN    nNoResultset  INT             --  <>0:  select no resultset
+  , IN    nResultset    INT             --  <>0:  select no resultset
   , OUT   nError        INT             --  stores the error-code
   , OUT   szError       NVARCHAR(1000)  --  stores the error-message
   , IN    nDebug        INT             --  <>0:  create debug-output
  )
 BEGIN
-  initialPart:BEGIN
+  -- initialPart:BEGIN
     --  Start: Declaration of local variables (only in procedure)   -- TODO
     DECLARE szProcedureName   NVARCHAR(50)    DEFAULT N'TestSP';-- TODO
     DECLARE nErrorCall        INT             DEFAULT 0;
-<<<<<<< HEAD
     DECLARE szErrorCall       NVARCHAR(1000)  DEFAULT N'';
-=======
-    DECLARE szErrorCall       NVARCHAR(1000)  DEFAULT '';
->>>>>>> master
     DECLARE nRowCount         INT             DEFAULT 0;
+    DECLARE nSuccess          INT             DEFAULT 1;
     --  -End-: Declaration of local variables (only in procedure)
     --  Start: Setting of global variables (stay alive after procedure)   -- TODO
     SET @szTestValue  = N'*St.Comment*_TestValue';
@@ -59,18 +55,17 @@ BEGIN
     SET nInValue      = IFNULL(nInValue,      1);
     SET nInoutValue   = IFNULL(nInoutValue,   2);
     --
-    SET nNoResultset  = IFNULL(nNoResultset,  0);
+    SET nResultset    = IFNULL(nResultset,  0);
     SET nError        = IFNULL(nError,        0);
-    SET szError       = IFNULL(szError,       N'*St.Comment*_NO ERROR');
+    SET szError       = IFNULL(szError,       N'');
     --  -End-: Set default values
-    --  Start: Create and clean Debug-table
-    DROP TABLE IF EXISTS tblDebug;
-    CREATE TEMPORARY TABLE tblDebug (
+    --  Start: Create Debug-table if necessary
+    CREATE TEMPORARY TABLE IF NOT EXISTS tblDebug (
         nId       INT             NOT NULL PRIMARY KEY AUTO_INCREMENT
       , dtTime    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
       , szComment NVARCHAR(1000)  NOT NULL DEFAULT N'*St.Comment*_Missing debug comment...'
       );
-    --  -End-: Create and clean Debug-table
+    --  -End-: Create Debug-table if necessary
     --  Start: Debug output at procedure start                  -- TODO
     IF nDebug <> 0 THEN
       INSERT INTO tblDebug (szComment) VALUE (N'---------------------------------------------------');
@@ -79,27 +74,27 @@ BEGIN
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nInValue = ', nInValue));          -- TODO
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nOutValue = ', nOutValue));        -- TODO
       INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nInoutValue = ', nInoutValue));    -- TODO
-      INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nNoResultset = ', nNoResultset));
+      INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'       with nResultset = ', nResultset));
       INSERT INTO tblDebug (szComment) VALUE (N'---------------------------------------------------');
       INSERT INTO tblDebug (szComment) VALUE (N'');
     END IF;
     --  -End-: Debug output at procedure start
     --  Start: Check inputs                                     -- TODO
-    IF IFNULL(nUserId, -1) < 1 THEN
+    SET szError = N'ERROR at input: ';
+    IF IFNULL(nUserId, -1) < 0 THEN
       SET nError  = 1;
-      SET szError = N'Input UserId was incorrect.';
+      SET szError = CONCAT(szError, N'Input UserId was incorrect. (', nUserId, N')');
+    END IF;
+    IF IFNULL(nInValue, -1) < 1 THEN
+      SET nError  = 1;
+      SET szError = CONCAT(szError, N'; Input nInValue was incorrect. (', nInValue, N')');
     END IF;
     --  -End-: Check inputs
-  END initialPart;
+  -- END initialPart;
   -- ----------------------------------
   --  Main part
   -- ----------------------------------
   mainPart:BEGIN
-    --  Start: Error check at beginning of main part
-    IF IFNULL(nError, 0) <> 0 THEN
-      LEAVE mainPart;
-    END IF;
-    --  -End-: Error check at beginning of main part
     --  Start: Declaration of handlers
     DECLARE EXIT      HANDLER FOR 1062      -- ER_DUP_ENTRY
         SET nError = 3;
@@ -110,6 +105,15 @@ BEGIN
     DECLARE EXIT      HANDLER FOR 1122      -- ER_CANT_FIND_UDF
         SET nError = 6;
     --  -End-: Declaration of handlers
+    --  Start: Error check at beginning of main part
+    IF IFNULL(nError, 0) <> 0 THEN
+      SET nSuccess = 0;
+      LEAVE mainPart;
+    END IF;
+    IF nError = 0 THEN
+      SET szError = N'';
+    END IF;
+    --  -End-: Error check at beginning of main part
 
 
 
@@ -132,13 +136,10 @@ BEGIN
     END IF;
     --  -End-: Debug
     --  Start: Error check
-    IF IFNULL(nErrorCall, -1) <> 0 THEN
-      IF nErrorCall < 0 THEN
-        SET nError = nErrorCall-100;
-      END IF;
-      IF nErrorCall > 0 THEN
-        SET nError = nErrorCall+100;
-      END IF;
+    IF IFNULL(nRowCount, -1) < 1 THEN
+      SET nError = 2;
+      SET szError = N'Couldnt update tblTestOne. RowCount to low.';
+      SET nSuccess  = 0;
       LEAVE mainPart;
     END IF;
     --  -End-: Error check
@@ -151,12 +152,12 @@ BEGIN
     set @nInt       = 492;
     set @szString   = N'*St.Comment*_Test-Call-String';
     set @nDebug     = 1;
-    set @nNoResultset= 0;
+    set @nResultset = 0;
     CALL TestSP_simple(
         @nInt
       , @szString
       , @nDebug
-      , @nNoResultset
+      , @nResultset
       , nErrorCall
       , szErrorCall
       );
@@ -172,18 +173,12 @@ BEGIN
     --  Start: Error check
     IF IFNULL(nErrorCall, -1) <> 0 THEN
       IF nErrorCall < 0 THEN
-<<<<<<< HEAD
         SET nError = nErrorCall-100;
       END IF;
       IF nErrorCall > 0 THEN
         SET nError = nErrorCall+100;
-=======
-        SET nError = nError-1;
       END IF;
-      IF nErrorCall > 0 THEN
-        SET nError = nError+100;
->>>>>>> master
-      END IF;
+      SET nSuccess  = 0;
       LEAVE mainPart;
     END IF;
     --  -End-: Error check
@@ -193,9 +188,10 @@ BEGIN
 
 
     -- Start: Secure and evaluate errors
-    IF ISNULL(szOutValue, N'') = N'' THEN
+    IF IFNULL(szOutValue, N'') = N'' THEN
       SET nError  = 2;
       SET szError = N'*St.Comment*_Error at end of procedure';
+      SET nSuccess  = 0;
       LEAVE mainPart;
     END IF;
     -- -End-: Secure and evaluate errors
@@ -213,11 +209,23 @@ BEGIN
       LEAVE errorPart;
     END IF;
     --  -End-: Check for errors
-    --  Start: Debug                                            -- TODO
+    set nSuccess = 0;
+    --  Start: Call spInsertHistorie                            -- TODO
+    call spInsertHistorie( 0               /* calling nUserId -> 0:System */
+    /*  szInTable     */    , N'tblTestOne'
+    /*  nInTableId    */    , -1
+    /*  nInError      */    , nError
+    /*  szInKommentar */    , concat(N'Failed ', N'test ', N'Kommentar: ', szError)
+    /*  nInArt        */    , 8
+    /*  nInUserId     */    , nUserId);
+    --  -End-: Call spInsertHistorie
+    --  Start: Debug
     IF nDebug <> 0 THEN
         INSERT INTO tblDebug (szComment) VALUE (N'');
         INSERT INTO tblDebug (szComment) VALUE (N'---------------------------------------------------');
         INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'Finished with errors', N'.'));
+        INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'   nError :  ', nError));
+        INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'   szError: ', szError));
         SELECT * FROM tblDebug;
     END IF;
     --  -End-: Debug
@@ -226,16 +234,28 @@ BEGIN
   -- End part
   -- ----------------------------------
   endPart:BEGIN
-    --  Start: Build resultset                                  -- TODO
-    IF nNoResultset = 0 THEN
-      SELECT szOutValue as result;
+    --  Start: Call spInsertHistorie                            -- TODO
+    IF  nError   = 0
+    AND nSuccess = 1 THEN
+      call spInsertHistorie( 0               /* calling nUserId -> 0:System */
+      /*  szInTable     */    , N'tblTestOne'
+      /*  nInTableId    */    , nOutValue
+      /*  nInError      */    , nError
+      /*  szInKommentar */    , concat(N'successfull ', N'test ', N'Kommentar: ', szError)
+      /*  nInArt        */    , 8
+      /*  nInUserId     */    , nUserId);
+    END IF;
+    --  -End-: Call spInsertHistorie
+    --  Start: Build resultset
+    IF nResultset <> 0 THEN
+      select nOutPersonId as result;
     END IF;
     --  -End-: Build resultset
-    --  Start: Debug                                            -- TODO
+    --  Start: Debug
     IF nDebug <> 0 THEN
         INSERT INTO tblDebug (szComment) VALUE (N'');
         INSERT INTO tblDebug (szComment) VALUE (N'---------------------------------------------------');
-        INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'Ending Procedure ', @szProcedureName, N'.'));
+        INSERT INTO tblDebug (szComment) VALUE (CONCAT(N'Ending Procedure ', szProcedureName, N'.'));
         INSERT INTO tblDebug (szComment) VALUE (N'---------------------------------------------------');
         SELECT * FROM tblDebug;
     END IF;
@@ -253,7 +273,7 @@ set @nInValue = 2;
 set @szOutValue = N'';
 set @nInoutValue = 3;
 
-set @nNoResultset = 0;
+set @nResultset   = 1;
 set @nError       = 0;
 set @szError      = N'';
 set @nDebug       = 1;
@@ -262,7 +282,7 @@ CALL TestSP(
   , @nInValue
   , @szOutValue
   , @nInoutValue
-  , @nNoResultset
+  , @nResultset
   , @nError
   , @szError
   , @nDebug
@@ -271,10 +291,12 @@ select  @nUserId
       , @nInValue
       , @szOutValue
       , @nInoutValue
-      , @nNoResultset
+      , @nResultset
       , @nError
       , @szError
       , @nDebug;
+select * from tblTestOne;
+select * from tblHistorie order by nHistorieId desc;
 */
 
 
